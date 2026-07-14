@@ -49,9 +49,8 @@ class AuthService:
 
     def _send_email_smtp(self, recipient: str, otp: str) -> None:
         import os
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
+        import urllib.request
+        import json
 
         smtp_host = os.environ.get("SMTP_HOST")
         smtp_port = os.environ.get("SMTP_PORT")
@@ -62,6 +61,40 @@ class AuthService:
         if not all([smtp_host, smtp_port, smtp_user, smtp_pass]):
             logger.warning("smtp_not_configured_skipping_send", email=recipient)
             return
+
+        # Check if we can use the Brevo HTTP API directly to bypass Render's SMTP port blocking (ports 465/587)
+        if (smtp_host and "brevo" in smtp_host.lower()) or (smtp_pass and smtp_pass.startswith("xsmtpsib-")):
+            try:
+                url = "https://api.brevo.com/v3/smtp/email"
+                headers = {
+                    "api-key": smtp_pass,
+                    "content-type": "application/json",
+                    "accept": "application/json"
+                }
+                payload = {
+                    "sender": {"email": smtp_sender},
+                    "to": [{"email": recipient}],
+                    "subject": f"MediQR Verification Code: {otp}",
+                    "textContent": f"Hello,\n\nYour verification code for MediQR is: {otp}\n\nThis code is valid for 5 minutes. If you did not request this code, please ignore this email.\n\nRegards,\nMediQR Team"
+                }
+                
+                req = urllib.request.Request(
+                    url, 
+                    data=json.dumps(payload).encode("utf-8"), 
+                    headers=headers, 
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    res_body = response.read().decode("utf-8")
+                    logger.info("email_otp_sent_brevo_api", email=recipient, response=res_body)
+                return
+            except Exception as api_err:
+                logger.warning("email_otp_brevo_api_failed_falling_back_to_smtp", error=str(api_err))
+
+        # Standard SMTP Fallback
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
 
         try:
             msg = MIMEMultipart()

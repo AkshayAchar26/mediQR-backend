@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: mediqr-backend
+    env: python
+    buildCommand: pip install uv && uv pip install -r requirements.txt --system
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_JWKS_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FIREBASE_CREDENTIALS_FILE
+        value: /etc/secrets/firebase-credentials.json

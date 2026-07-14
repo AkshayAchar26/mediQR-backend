@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from functools import lru_cache
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
     
     # Firebase
-    firebase_credentials_file: str = Field(..., alias="FIREBASE_CREDENTIALS_FILE")
+    firebase_credentials_file: Optional[str] = Field(default=None, alias="FIREBASE_CREDENTIALS_FILE")
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -11,9 +11,13 @@ settings = get_settings()
 
 # Initialize Firebase
 try:
-    cred = credentials.Certificate(settings.firebase_credentials_file)
-    firebase_app = firebase_admin.initialize_app(cred)
-    logger.info("firebase_initialized")
+    if settings.firebase_credentials_file:
+        cred = credentials.Certificate(settings.firebase_credentials_file)
+        firebase_app = firebase_admin.initialize_app(cred)
+        logger.info("firebase_initialized")
+    else:
+        logger.warning("firebase_credentials_file_not_set")
+        firebase_app = None
 except Exception as e:
     logger.error("firebase_init_failed", error=str(e))
     # We allow it to fail gracefully here if the file is not present yet, 

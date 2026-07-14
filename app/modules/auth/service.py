@@ -43,6 +43,58 @@ class AuthService:
         await db.commit()
         logger.info("email_otp_generated", email=email, otp=otp)
 
+        # Send SMTP email in a background thread if configured
+        import asyncio
+        asyncio.create_task(asyncio.to_thread(self._send_email_smtp, email, otp))
+
+    def _send_email_smtp(self, recipient: str, otp: str) -> None:
+        import os
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        smtp_host = os.environ.get("SMTP_HOST")
+        smtp_port = os.environ.get("SMTP_PORT")
+        smtp_user = os.environ.get("SMTP_USER")
+        smtp_pass = os.environ.get("SMTP_PASS")
+        smtp_sender = os.environ.get("SMTP_SENDER", smtp_user)
+
+        if not all([smtp_host, smtp_port, smtp_user, smtp_pass]):
+            logger.warning("smtp_not_configured_skipping_send", email=recipient)
+            return
+
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = smtp_sender
+            msg["To"] = recipient
+            msg["Subject"] = f"MediQR Verification Code: {otp}"
+
+            body = f"""Hello,
+
+Your verification code for MediQR is: {otp}
+
+This code is valid for 5 minutes. If you did not request this code, please ignore this email.
+
+Regards,
+MediQR Team"""
+            
+            msg.attach(MIMEText(body, "plain"))
+
+            # Connect and send
+            port = int(smtp_port)
+            if port == 465:
+                server = smtplib.SMTP_SSL(smtp_host, port, timeout=10)
+            else:
+                server = smtplib.SMTP(smtp_host, port, timeout=10)
+                server.starttls()
+
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_sender, recipient, msg.as_string())
+            server.close()
+            logger.info("email_otp_sent_smtp", email=recipient)
+        except Exception as e:
+            logger.error("email_otp_send_failed", email=recipient, error=str(e))
+
     async def verify_login(self, db: AsyncSession, email: str, otp: str) -> dict:
         """
         Verifies the Email OTP and returns a JWT token.

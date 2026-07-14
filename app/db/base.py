@@ -8,7 +8,8 @@ engine = create_async_engine(
     settings.database_url,
     echo=False,  # Set to True for SQL query logging
     pool_size=5,
-    max_overflow=10
+    max_overflow=10,
+    connect_args={"statement_cache_size": 0}
 )
 
 async_session_factory = async_sessionmaker(

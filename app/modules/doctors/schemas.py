@@ -28,3 +28,5 @@ class DoctorUpdateRequest(BaseModel):
     name: Optional[str] = None
     hospital_or_clinic: Optional[str] = None
     expertise: Optional[List[str]] = None
+    certificate_url: Optional[str] = None
+    verified_status: Optional[str] = None

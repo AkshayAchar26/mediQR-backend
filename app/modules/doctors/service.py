@@ -46,5 +46,9 @@ class DoctorService:
             doctor.hospital_or_clinic = data.hospital_or_clinic
         if data.expertise is not None:
             doctor.expertise = data.expertise
+        if data.certificate_url is not None:
+            doctor.certificate_url = data.certificate_url
+        if data.verified_status is not None:
+            doctor.verified_status = data.verified_status
             
         return await self.repository.update(doctor)

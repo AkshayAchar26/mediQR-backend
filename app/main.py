@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+load_dotenv()
+
 from app.core.exceptions import AppError, app_error_handler, general_exception_handler
 from app.core.logging import setup_logging
 from app.modules.auth.router import router as auth_router
